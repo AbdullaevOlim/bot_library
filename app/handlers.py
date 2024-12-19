@@ -14,7 +14,7 @@ router = Router()
 class EditBookForm(StatesGroup):
     book_title = State()  # Для ввода названия книги
     edit_field = State()  # Для выбора поля для редактирования
-    new_value = State()
+    new_value = State() # Для 
 
 # Добавим состояние для редактирования филиала
 class EditBranchForm(StatesGroup):
