@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from sqlalchemy.future import select
 from app.database.models import async_session, Branch
+from sqlalchemy.orm import joinedload
 
 
 router = Router()
@@ -44,6 +45,7 @@ async def cmd_start(message: Message):
         "/add_branch - Добавить новый филиал в библиотеку.\n"
         "/edit_book - Изменить информацию о книге.\n"
         "/edit_branch - Изменить информацию о филиале.\n"
+        "/books - Вывести список книг\n"
     )
 
 # Обработчик команды /add_book
@@ -60,6 +62,25 @@ async def cmd_add_book(message: Message, state: FSMContext):
 async def cmd_add_branch(message: Message, state: FSMContext):
     await state.set_state(AddBranchForm.branch_name)  # Устанавливаем состояние для ввода названия филиала
     await message.answer("Введите название нового филиала:")
+
+@router.message(Command('books'))
+async def cmd_books(message: Message):
+    async with async_session() as session:
+        # Используем joinedload для предварительной загрузки связанных данных
+        result = await session.execute(
+            select(Book)
+            .options(joinedload(Book.branch))
+        )
+        books = result.scalars().all()
+
+        if not books:
+            await message.answer("📚 Нет доступных книг в библиотеке.")
+        else:
+            books_list = "\n".join(
+                f"📖 {book.title} by {book.author} ({book.year_of_publication}) - Branch: {book.branch.name}, Copies: {book.copies_in_branch}"
+                for book in books
+            )
+            await message.answer(f"Список книг:\n{books_list}")
 
 # Обработчик команды /count_books
 @router.message(Command('count_books'))
